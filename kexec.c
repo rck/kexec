@@ -57,17 +57,17 @@ int main(int argc, char **argv)
       case 0: /* child */
          {
             char *host = basename(argv[0]);
-            char *config_orig = find_config_entry(host); /* strduped */
-            if (config_orig == NULL)
+            char *config = find_config_entry(host); /* strduped */
+            if (config == NULL)
             {
                fputs("No configuration entry found\n", stderr);
                exit(EXIT_FAILURE);
             }
 
             /* remove hostname and ":" from config */
-            char *config = config_orig + strlen(host) + 1;
+            char *sequence = config + strlen(host) + 1;
 
-            char *protoport = strtok(config, ",");
+            char *protoport = strtok(sequence, ",");
             if (protoport != NULL)
             {
                knock(host, protoport);
@@ -81,8 +81,8 @@ int main(int argc, char **argv)
                }
             }
             
-            if (config_orig != NULL) 
-               free(config_orig);
+            if (config != NULL) 
+               free(config);
 
             argv++; /* jump over original argv[0] */
             if (execvp(argv[0], argv) == -1)
@@ -220,5 +220,5 @@ void knock(char *host, char *protoport)
 void usage(const char * const command)
 {
    fprintf(stderr, "%s (symlink to hostname) COMMAND [OPTIONS]\n", command);
-   exit (EXIT_FAILURE);
+   exit(EXIT_FAILURE);
 }
