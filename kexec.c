@@ -98,7 +98,11 @@ int main(int argc, char **argv)
       default: /* parent */
          {
             int status;
-            wait(&status);
+            pid_t tpid;
+            do
+            {
+              tpid = wait(&status);
+            } while (tpid != pid);
             exit(WEXITSTATUS(status));
          }
          break; /* never reached */
