@@ -84,6 +84,9 @@ int main(int argc, char **argv)
             if (config != NULL) 
                free(config);
 
+            /* give server 1 second to open the port */
+            sleep(1);
+
             argv++; /* jump over original argv[0] */
             if (execvp(argv[0], argv) == -1)
             {
