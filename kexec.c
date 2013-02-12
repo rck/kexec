@@ -36,7 +36,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 char *find_config_entry(char * const);
 void knock(char *, char *);
-void usage(const char * const);
+void usage(void);
 
 static const char *command = "kexec";
 
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 
    command = argv[0];
    if (argc < 2)
-      usage(command);
+      usage(); /* does not return */
 
    pid_t pid = fork();
    switch (pid) 
@@ -224,7 +224,7 @@ void knock(char *host, char *protoport)
    }
 }
 
-void usage(const char * const command)
+void usage(void)
 {
    fprintf(stderr, "%s (symlink to hostname) COMMAND [OPTIONS]\n", command);
    exit(EXIT_FAILURE);
