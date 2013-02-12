@@ -35,7 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 char *find_config_entry(char * const);
-void knock(char *, char *);
+int knock(char *, char *);
 void usage(void);
 
 static const char *command = "kexec";
@@ -70,14 +70,24 @@ int main(int argc, char **argv)
             char *protoport = strtok(sequence, ",");
             if (protoport != NULL)
             {
-               knock(host, protoport);
+               if (knock(host, protoport) == -1)
+                  if (config != NULL) 
+                  {
+                     free(config);
+                     exit(EXIT_FAILURE);
+                  }
 
                while((protoport = strtok(NULL, ",")) != NULL)
                {
 #ifdef SLEEP
                   usleep(SLEEP_MS * 1000);
 #endif
-                  knock(host, protoport);
+                  if (knock(host, protoport) == -1)
+                     if (config != NULL) 
+                     {
+                        free(config);
+                        exit(EXIT_FAILURE);
+                     }
                }
             }
             
@@ -150,7 +160,7 @@ char *find_config_entry(char * const host)
 
 /* knocking magic partially taken from judd vinet:
  * github.com/jvinet/knock */
-void knock(char *host, char *protoport)
+int knock(char *host, char *protoport)
 {
    char *portstr = protoport + 4; /* jump over "[tcp|udp]:" */
    char *endptr;
@@ -164,19 +174,19 @@ void knock(char *host, char *protoport)
          || (errno != 0 && val == 0))
    {
       perror("strtol");
-      exit(EXIT_FAILURE);
+      return -1;
    }
 
    if (endptr == portstr)
    {
       fputs("No digits were found\n", stderr);
-      exit(EXIT_FAILURE);
+      return -1;
    }
 
    if (val < 1 || val > UINT16_MAX)
    {
       fputs("not a valid port range\n", stderr);
-      exit(EXIT_FAILURE);
+      return -1;
    }
 
    uint16_t port = (uint16_t)val;
@@ -194,7 +204,7 @@ void knock(char *host, char *protoport)
       if(sd == -1) 
       {
          perror("socket");
-         exit(EXIT_FAILURE);
+         return -1;
       }
 #if 0
       printf("hitting udp %s:%u\n", inet_ntoa(addr.sin_addr), port);
@@ -208,7 +218,7 @@ void knock(char *host, char *protoport)
       if(sd == -1)
       {
          perror("socket");
-         exit(EXIT_FAILURE);
+         return -1;
       }
       flags = fcntl(sd, F_GETFL, 0);
       fcntl(sd, F_SETFL, flags | O_NONBLOCK);
@@ -220,8 +230,10 @@ void knock(char *host, char *protoport)
    else /* unknown */
    {
       fputs("unknown protocol\n", stderr);
-      exit(EXIT_FAILURE);
+      return -1;
    }
+
+   return 0;
 }
 
 void usage(void)
