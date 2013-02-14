@@ -28,24 +28,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <limits.h>
+#include <stdbool.h>
 
 #define MAXLINE (1024)
 #ifdef SLEEP
 #define SLEEP_MS (100) /* sleep this time between multi-port knocks */
 #endif
+#define STREQ(a,b) (strcmp((a),(b)) == 0)
 
-char *find_config_entry(char * const);
-int knock(char *, char *);
-void usage(void);
+static char *find_config_entry(char * const);
+static int knock(char *, char *);
+static void usage(void);
 
 static const char *command = "kexec";
+static bool verbose = false;
 
 int main(int argc, char **argv)
 {
 
    command = argv[0];
+
+   /* getopt considered harmful */
    if (argc < 2)
       usage(); /* does not return */
+   if (argc >= 3 && STREQ(argv[1], "-v"))
+      verbose = true;
 
    pid_t pid = fork();
    switch (pid) 
@@ -95,9 +102,14 @@ int main(int argc, char **argv)
                free(config);
 
             /* give server 1 second to open the port */
+            if (verbose)
+               puts("sleeping...");
             sleep(1);
 
-            argv++; /* jump over original argv[0] */
+            verbose == true ? argv += 2 : argv++;
+            if (verbose)
+               printf("executing: %s\n", argv[0]);
+
             if (execvp(argv[0], argv) == -1)
             {
                perror("exec");
@@ -122,7 +134,7 @@ int main(int argc, char **argv)
    return EXIT_SUCCESS;
 }
 
-char *find_config_entry(char * const host)
+static char *find_config_entry(char * const host)
 {
    char path[PATH_MAX] = {0};
    snprintf(path, PATH_MAX, "%s/.kexec", getenv("HOME"));
@@ -160,7 +172,7 @@ char *find_config_entry(char * const host)
 
 /* knocking magic partially taken from judd vinet:
  * github.com/jvinet/knock */
-int knock(char *host, char *protoport)
+static int knock(char *host, char *protoport)
 {
    char *portstr = protoport + 4; /* jump over "[tcp|udp]:" */
    char *endptr;
@@ -206,9 +218,9 @@ int knock(char *host, char *protoport)
          perror("socket");
          return -1;
       }
-#if 0
-      printf("hitting udp %s:%u\n", inet_ntoa(addr.sin_addr), port);
-#endif
+      if (verbose)
+         printf("hitting udp %s:%u\n", inet_ntoa(addr.sin_addr), port);
+
       sendto(sd, "", 1, 0, (struct sockaddr*)&addr, sizeof(addr));
    }
    else if (protoport[0] == 't') /* tcp */
@@ -222,9 +234,10 @@ int knock(char *host, char *protoport)
       }
       flags = fcntl(sd, F_GETFL, 0);
       fcntl(sd, F_SETFL, flags | O_NONBLOCK);
-#if 0
-      printf("hitting tcp %s:%u\n", inet_ntoa(addr.sin_addr), port);
-#endif
+
+      if (verbose)
+         printf("hitting tcp %s:%u\n", inet_ntoa(addr.sin_addr), port);
+
       connect(sd, (struct sockaddr*)&addr, sizeof(struct sockaddr));
    }
    else /* unknown */
@@ -236,7 +249,7 @@ int knock(char *host, char *protoport)
    return 0;
 }
 
-void usage(void)
+static void usage(void)
 {
    fprintf(stderr, "%s (symlink to hostname) COMMAND [OPTIONS]\n", command);
    exit(EXIT_FAILURE);
