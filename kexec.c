@@ -107,8 +107,14 @@ int main(int argc, char **argv)
             sleep(1);
 
             verbose == true ? argv += 2 : argv++;
+
             if (verbose)
-               printf("executing: %s\n", argv[0]);
+            {
+               fputs("executing: ", stdout);
+               for (int i = 0; argv[i] != NULL; ++i)
+                  printf("%s ", argv[i]);
+               putchar('\n');
+            }
 
             if (execvp(argv[0], argv) == -1)
             {
