@@ -228,6 +228,7 @@ static int knock(char *host, char *protoport)
          printf("hitting udp %s:%u\n", inet_ntoa(addr.sin_addr), port);
 
       sendto(sd, "", 1, 0, (struct sockaddr*)&addr, sizeof(addr));
+      (void)close(sd);
    }
    else if (protoport[0] == 't') /* tcp */
    {
@@ -245,6 +246,7 @@ static int knock(char *host, char *protoport)
          printf("hitting tcp %s:%u\n", inet_ntoa(addr.sin_addr), port);
 
       connect(sd, (struct sockaddr*)&addr, sizeof(struct sockaddr));
+      (void)close(sd);
    }
    else /* unknown */
    {
